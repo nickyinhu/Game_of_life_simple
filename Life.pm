@@ -94,43 +94,9 @@ sub _populate_cell {
     my $col = shift;
     my $size = $self->size;
     my $cells = $self->cells;
-    my $current_state = $life_map->[$row]->[$col];
+    my $current_state = $life_map->{"$row\|$col"}->{state};
+    my $neigbour_live_cells = $life_map->{"$row\|$col"}->{neigbour_live_cells};
 
-    my $neigbour_live_cells = 0;
-
-    if ($row > 0) {
-        if ($col > 0) {
-            my $nw = $life_map->[$row-1]->[$col-1];
-            $neigbour_live_cells++ if $nw == 1;
-        }
-        my $north = $life_map->[$row-1]->[$col];
-        $neigbour_live_cells++ if $north == 1;
-        if ($col < $size-1) {
-            my $ne = $life_map->[$row-1]->[$col+1];
-            $neigbour_live_cells++ if $ne == 1;
-        }
-    }
-    if ($col > 0) {
-        my $west = $life_map->[$row]->[$col-1];
-        $neigbour_live_cells++ if $west == 1;
-    }
-    if ($col < $size-1) {
-        my $east = $life_map->[$row]->[$col+1];
-        $neigbour_live_cells++ if $east == 1;
-    }
-    if ($row < $size-1) {
-        if ($col > 0) {
-            my $sw = $life_map->[$row+1]->[$col-1];
-            $neigbour_live_cells++ if $sw == 1;
-        }
-        my $south = $life_map->[$row+1]->[$col];
-        $neigbour_live_cells++ if $south == 1;
-        if ($col < $size-1) {
-            my $se = $life_map->[$row+1]->[$col+1];
-            $neigbour_live_cells++ if $se == 1;
-        }
-    }
-    # say "$row $col: $current_state $neigbour_live_cells";
     if ($current_state == 0) {
         if ($neigbour_live_cells == 3) {
             $cells->[$row]->[$col]->live;
@@ -149,8 +115,32 @@ sub _get_current_life_map {
     my $life_map;
     my $row = 0;
     for my $cell_row (@$cells) {
-        @{$life_map->[$row]} = map {$_->state} @{$cell_row};
+        my $col = 0;
+        for my $cell (@$cell_row) {
+            $life_map->{"$row\|$col"}->{state} = $cell->state;
+            $life_map->{"$row\|$col"}->{neigbour_live_cells} = 0;
+            $col++;
+        }
         $row++;
+    }
+    for my $key (keys %$life_map) {
+        my ($row,$col) = split(/\|/, $key);
+        $life_map->{$key}->{neigbour_live_cells}++ if exists $life_map->{($row-1) . '|' . ($col-1)}
+                                                          && $life_map->{($row-1) . '|' . ($col-1)}->{state};
+        $life_map->{$key}->{neigbour_live_cells}++ if exists $life_map->{($row-1) . '|' . $col}
+                                                          && $life_map->{($row-1) . '|' . $col}->{state};
+        $life_map->{$key}->{neigbour_live_cells}++ if exists $life_map->{($row-1) . '|' . ($col+1)}
+                                                          && $life_map->{($row-1) . '|' . ($col+1)}->{state};
+        $life_map->{$key}->{neigbour_live_cells}++ if exists $life_map->{$row . '|' . ($col-1)}
+                                                          && $life_map->{$row . '|' . ($col-1)}->{state};
+        $life_map->{$key}->{neigbour_live_cells}++ if exists $life_map->{$row . '|' . ($col+1)}
+                                                          && $life_map->{$row . '|' . ($col+1)}->{state};
+        $life_map->{$key}->{neigbour_live_cells}++ if exists $life_map->{($row+1) . '|' . ($col-1)}
+                                                          && $life_map->{($row+1) . '|' . ($col-1)}->{state};
+        $life_map->{$key}->{neigbour_live_cells}++ if exists $life_map->{($row+1) . '|' . $col}
+                                                          && $life_map->{($row+1) . '|' . $col}->{state};
+        $life_map->{$key}->{neigbour_live_cells}++ if exists $life_map->{($row+1) . '|' . ($col+1)}
+                                                          && $life_map->{($row+1) . '|' . ($col+1)}->{state};
     }
     return $life_map;
 }
